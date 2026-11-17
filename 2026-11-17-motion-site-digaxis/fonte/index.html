@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Diga Xis Motion</title>
+<style>
+@font-face { font-family: 'Fraunces'; font-style: italic; font-weight: 300 700; src: url(fraunces-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 300 700; src: url(fraunces.woff2) format('woff2'); }
+:root { --bg:#0C0C0C; --panel:#151515; --panel2:#1C1C1C; --ink:#F2F0EB; --muted:#A19E97; --faint:#6E6C66; --line:rgba(255,255,255,.09); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; background: var(--bg); overflow: hidden; }
+body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+.scene { position: absolute; inset: 0; display: none; }
+.disp { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 400; font-variation-settings: 'opsz' 144; }
+.label { font-size: 26px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); }
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .02em .12em; margin-bottom: -.12em; }
+.wi { display: inline-block; will-change: transform; }
+.photo { position: absolute; background-size: cover; background-position: center; overflow: hidden; }
+.who { position: absolute; left: 14px; bottom: 10px; font-family: 'Fraunces', serif; font-style: italic; font-size: 26px; color: rgba(255,255,255,.92); text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+#hud span { position: absolute; top: 64px; font-size: 22px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); font-variant-numeric: tabular-nums; }
+#grain { position: absolute; inset: -64px; z-index: 60; opacity: .07; mix-blend-mode: screen; pointer-events: none; }
+#vignette { position: absolute; inset: 0; z-index: 55; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%); }
+#flash { position: absolute; inset: 0; z-index: 70; background: #fff; opacity: 0; pointer-events: none; }
+
+/* film strip */
+.strip { position: absolute; left: -1000px; width: 3200px; height: 380px; background: #050505; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.perf { position: absolute; left: 0; right: 0; height: 18px; background: repeating-linear-gradient(90deg, transparent 0 24px, #1C1C1C 24px 52px, transparent 52px 76px); }
+.edge { position: absolute; left: 60px; right: 60px; display: flex; justify-content: space-between; font-size: 18px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
+.frames { position: absolute; top: 74px; left: 0; display: flex; gap: 18px; }
+.frames .photo { position: relative; height: 232px; border-radius: 10px; flex: none; }
+
+/* step text */
+.step-head { position: absolute; left: 80px; right: 80px; top: 190px; }
+.step-row { display: flex; align-items: flex-end; gap: 36px; }
+.num { font-size: 300px; line-height: .8; color: var(--ink); }
+.step-title { font-size: 92px; line-height: 1.04; color: var(--ink); padding-bottom: 14px; }
+.lead { margin-top: 44px; font-size: 40px; line-height: 1.35; color: var(--muted); max-width: 22ch; }
+.lead b { color: var(--ink); font-weight: 600; }
+
+/* qr */
+#qrcard { position: absolute; left: 230px; top: 820px; width: 620px; padding: 56px; background: #F2F0EB; border-radius: 40px; box-shadow: 0 40px 120px rgba(0,0,0,.6); }
+#qr { position: relative; width: 508px; height: 508px; }
+#qr i { position: absolute; background: #0C0C0C; border-radius: 3px; }
+#qrcap { margin-top: 30px; text-align: center; color: #0C0C0C; font-size: 30px; }
+
+/* phone */
+#phone { position: absolute; left: 270px; top: 790px; width: 540px; height: 1080px; border-radius: 86px; background: #000; border: 14px solid #33384a; box-shadow: 0 0 0 2px #566080 inset, 0 60px 160px rgba(86,96,128,.35); overflow: hidden; z-index: 5; }
+#phone .island { position: absolute; top: 22px; left: 50%; width: 150px; height: 42px; margin-left: -75px; border-radius: 30px; background: #000; z-index: 10; }
+.scr { position: absolute; inset: 0; }
+.corner { position: absolute; width: 70px; height: 70px; border-color: #fff; border-style: solid; border-width: 0; }
+#tablecard { position: absolute; left: 70px; top: 230px; width: 372px; padding: 34px 34px 26px; background: #F2F0EB; border-radius: 22px; color: #0C0C0C; text-align: center; }
+#tableqr { position: relative; width: 304px; height: 304px; }
+#tableqr i { position: absolute; background: #0C0C0C; }
+#notif { position: absolute; left: 22px; right: 22px; top: 86px; padding: 22px 26px; border-radius: 30px; background: rgba(40,40,44,.92); display: flex; gap: 18px; align-items: center; z-index: 8; }
+#notif .ic { width: 58px; height: 58px; border-radius: 14px; background: #F2F0EB; display: grid; place-items: center; color: #0C0C0C; font: italic 30px 'Fraunces', serif; }
+.btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; font-weight: 600; }
+.badge { display: inline-flex; align-items: center; gap: 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel2); padding: 10px 22px; font-size: 22px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+
+/* modes */
+.card { position: absolute; left: 80px; width: 920px; border-radius: 40px; border: 1px solid var(--line); background: var(--panel); padding: 44px; overflow: hidden; }
+.card h4 { font-size: 54px; line-height: 1.1; margin-top: 22px; }
+.card p { font-size: 28px; color: var(--muted); margin-top: 8px; }
+.thumbs { position: relative; height: 230px; margin-top: 34px; }
+.thumbs .photo { top: 0; width: 196px; height: 230px; border-radius: 16px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: #ff4d3d; box-shadow: 0 0 0 0 rgba(255,77,61,.6); }
+
+/* album */
+#grid { position: absolute; left: 90px; top: 640px; width: 900px; height: 1200px; }
+#grid .photo { border-radius: 18px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- S1 hero -->
+  <div class="scene" id="s1">
+    <div style="position:absolute;left:80px;right:80px;top:560px">
+      <div class="label" id="s1label">Câmera descartável digital para eventos</div>
+      <h1 class="disp" id="s1title" style="margin-top:56px;font-size:128px;line-height:1.02;font-weight:400"></h1>
+      <p id="s1lead" style="margin-top:60px;font-size:38px;line-height:1.4;color:var(--muted);max-width:24ch">Seus convidados escaneiam um QR code e fotografam a festa com o próprio celular.</p>
+    </div>
+  </div>
+
+  <!-- S2 film -->
+  <div class="scene" id="s2">
+    <div class="strip" id="stripA" style="top:520px"></div>
+    <div class="strip" id="stripB" style="top:1080px"></div>
+    <div style="position:absolute;left:80px;right:80px;top:200px" id="s2top">
+      <div class="label">Pelos olhos de todo mundo</div>
+    </div>
+    <div style="position:absolute;left:80px;right:80px;top:1560px" id="s2bot">
+      <h2 class="disp" id="s2title" style="font-size:96px;line-height:1.05"></h2>
+    </div>
+  </div>
+
+  <!-- S3..S6 step heads -->
+  <div class="scene" id="h1"><div class="step-head"><div class="label">Passo 1 de 4</div><div class="step-row" style="margin-top:30px"><span class="disp num">1</span><span class="disp step-title" data-words="Crie seu evento"></span></div><p class="lead">Em poucos minutos você recebe um <b>QR code exclusivo</b> da sua festa.</p></div></div>
+  <div class="scene" id="h2"><div class="step-head"><div class="label">Passo 2 de 4</div><div class="step-row" style="margin-top:30px"><span class="disp num">2</span><span class="disp step-title" data-words="Convidados escaneiam"></span></div><p class="lead"><b>Sem baixar aplicativo</b>, sem criar conta. Direto no navegador.</p></div></div>
+  <div class="scene" id="h3"><div class="step-head"><div class="label">Passo 3 de 4</div><div class="step-row" style="margin-top:30px"><span class="disp num">3</span><span class="disp step-title" data-words="Tiram fotos"></span></div><p class="lead">Como numa descartável, <b>cada clique vale mais</b>.</p></div></div>
+  <div class="scene" id="h4"><div class="step-head"><div class="label">Passo 4 de 4</div><div class="step-row" style="margin-top:30px"><span class="disp num">4</span><span class="disp step-title" data-words="Ao vivo, ou revelado depois"></span></div></div></div>
+
+  <!-- S3 QR -->
+  <div class="scene" id="s3qr">
+    <div id="qrcard"><div id="qr"></div><div id="qrcap" class="disp">Casamento de Ana &amp; Pedro</div></div>
+  </div>
+
+  <!-- shared phone (S4 + S5) -->
+  <div class="scene" id="sphone">
+    <div id="phone">
+      <div class="island"></div>
+      <!-- scan screen -->
+      <div class="scr" id="scrScan" style="background:linear-gradient(160deg,#2a2620,#141210)">
+        <div class="photo" style="inset:0;background-image:url(file:///home/user/xis/public/wedding-05.jpeg);filter:blur(18px) brightness(.45);transform:scale(1.2)"></div>
+        <div id="tablecard"><div id="tableqr"></div><div class="disp" style="font-size:24px;margin-top:16px">Diga Xis · Ana &amp; Pedro</div></div>
+        <div id="brackets" style="position:absolute;left:50px;top:210px;width:412px;height:420px">
+          <div class="corner" style="left:0;top:0;border-left-width:6px;border-top-width:6px;border-top-left-radius:22px"></div>
+          <div class="corner" style="right:0;top:0;border-right-width:6px;border-top-width:6px;border-top-right-radius:22px"></div>
+          <div class="corner" style="left:0;bottom:0;border-left-width:6px;border-bottom-width:6px;border-bottom-left-radius:22px"></div>
+          <div class="corner" style="right:0;bottom:0;border-right-width:6px;border-bottom-width:6px;border-bottom-right-radius:22px"></div>
+        </div>
+        <div id="scanline" style="position:absolute;left:70px;width:372px;height:4px;background:#fff;box-shadow:0 0 30px 8px rgba(255,255,255,.5)"></div>
+        <div id="notif"><div class="ic">x</div><div><div style="font-size:24px;font-weight:600">digaxis.app</div><div style="font-size:22px;color:#bbb;margin-top:4px">Abrir no navegador</div></div></div>
+      </div>
+      <!-- welcome screen -->
+      <div class="scr" id="scrWelcome" style="background:var(--bg);padding:150px 48px 0">
+        <div class="label" style="font-size:18px">Você entrou no evento</div>
+        <div class="disp" style="font-size:62px;line-height:1.05;margin-top:24px">Casamento de Ana &amp; Pedro</div>
+        <div class="photo" style="position:relative;margin-top:44px;height:380px;border-radius:24px;background-image:url(file:///home/user/xis/public/bride.jpeg)"></div>
+        <div id="startBtn" class="btn" style="margin-top:48px;width:100%;height:96px;background:#fff;color:#0C0C0C;font-size:28px">Começar a fotografar</div>
+      </div>
+      <!-- camera screen -->
+      <div class="scr" id="scrCam" style="background:#000">
+        <div id="camImg" class="photo" style="left:0;right:0;top:0;height:820px;background-image:url(file:///home/user/xis/public/wedding-07.jpeg)"></div>
+        <div style="position:absolute;left:0;right:0;top:820px;bottom:0;display:flex;align-items:center;justify-content:space-between;padding:0 56px">
+          <div id="lastShot" class="photo" style="position:relative;width:76px;height:76px;border-radius:14px;background:#222"></div>
+          <div id="shutter" style="width:116px;height:116px;border-radius:50%;border:6px solid #fff;display:grid;place-items:center"><div id="shutterIn" style="width:88px;height:88px;border-radius:50%;background:#fff"></div></div>
+          <div style="width:76px;text-align:center"><div id="shots" class="disp" style="font-size:44px;line-height:1">10</div><div style="font-size:15px;color:#999;margin-top:4px;letter-spacing:.1em">CLIQUES</div></div>
+        </div>
+        <div id="camFlash" style="position:absolute;inset:0;background:#fff;opacity:0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S6 modes -->
+  <div class="scene" id="s6">
+    <div class="card" id="cardLive" style="top:660px">
+      <div class="badge"><span class="dot" id="liveDot"></span>Ao vivo</div>
+      <h4 class="disp">A festa contada por todos</h4>
+      <p>Cada foto aparece no telão na hora.</p>
+      <div class="thumbs" id="liveThumbs"></div>
+    </div>
+    <div class="card" id="cardVault" style="top:1240px">
+      <div class="badge">Revelado depois</div>
+      <h4 class="disp" id="vaultTitle">Revelação amanhã, 10h</h4>
+      <p id="vaultSub">Ninguém vê nada agora.</p>
+      <div class="thumbs" id="vaultThumbs"></div>
+    </div>
+  </div>
+
+  <!-- S7 album -->
+  <div class="scene" id="s7">
+    <div style="position:absolute;left:80px;right:80px;top:200px">
+      <div class="label" id="s7label">Depois da festa</div>
+      <h2 class="disp" id="s7title" style="margin-top:34px;font-size:92px;line-height:1.04"></h2>
+    </div>
+    <div id="grid"></div>
+  </div>
+
+  <!-- S8 end -->
+  <div class="scene" id="s8">
+    <div style="position:absolute;left:0;right:0;top:640px;display:flex;flex-direction:column;align-items:center;text-align:center">
+      <img id="logo" src="file:///home/user/xis/public/logo-diga-xis-branco.svg" style="width:640px">
+      <div id="tag" class="label" style="margin-top:70px;font-size:28px">digam xis · sorriam · revelem</div>
+      <div id="cta" class="btn" style="margin-top:110px;height:128px;padding:0 80px;background:#fff;color:#0C0C0C;font-size:42px">Criar meu evento</div>
+      <div id="free" style="margin-top:44px;font-size:30px;color:var(--muted)">Grátis para até 5 convidados</div>
+      <div id="url" class="disp" style="margin-top:220px;font-size:52px">digaxis.app</div>
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="hud"><span style="left:80px">Diga Xis 400</span><span id="frameNo" style="right:80px">▸ 12A</span></div>
+  <canvas id="grain" width="1208" height="2048"></canvas>
+  <div id="flash"></div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const IMG = (n) => `file:///home/user/xis/public/wedding-${String(n).padStart(2, '0')}.jpeg`;
+const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const p = (t, a, b) => cl((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);
+const eo5 = (x) => 1 - Math.pow(1 - x, 5);
+const eio = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const eback = (x) => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+function words(el, text) {
+  el.innerHTML = text.split(' ').map((w) => `<span class="w"><span class="wi">${w}</span></span>`).join(' ');
+  return [...el.querySelectorAll('.wi')];
+}
+function animWords(list, t, start, stagger = 0.09, dur = 0.7) {
+  list.forEach((w, i) => {
+    const e = eo5(p(t, start + i * stagger, start + i * stagger + dur));
+    w.style.transform = `translateY(${(1 - e) * 115}%)`;
+  });
+}
+function show(el, t, a, b, fin = 0.35, fout = 0.35) {
+  const v = Math.min(eo(p(t, a, a + fin)), 1 - eio(p(t, b - fout, b)));
+  el.style.display = t >= a && t <= b ? 'block' : 'none';
+  el.style.opacity = v;
+  return v;
+}
+const fade = (el, t, a, dur = 0.5, dy = 40) => {
+  const e = eo(p(t, a, a + dur));
+  el.style.opacity = e; el.style.transform = `translateY(${(1 - e) * dy}px)`;
+};
+
+// ---- build ----
+const s1words = words($('#s1title'), 'Capture o seu dia pelos olhos de todo mundo.');
+const s2words = words($('#s2title'), 'A festa contada por todos.');
+const s7words = words($('#s7title'), 'Todas as fotos, de todos os convidados.');
+const headWords = [1, 2, 3, 4].map((i) => words($(`#h${i} .step-title`), $(`#h${i} .step-title`).dataset.words));
+
+const GUESTS = ['bia.m', 'joão.f', 'duda', 'rafa.c', 'lu', 'tio beto', 'mari', 'caio', 'nina', 'vó célia', 'gabi', 'pedro.h'];
+function buildStrip(el, order, edgeTop, edgeBot) {
+  el.innerHTML = `<div class="perf" style="top:10px"></div><div class="perf" style="bottom:10px"></div>
+  <div class="edge" style="top:38px">${edgeTop.map((s) => `<span>${s}</span>`).join('')}</div>
+  <div class="frames"></div>
+  <div class="edge" style="bottom:36px">${edgeBot.map((s) => `<span>${s}</span>`).join('')}</div>`;
+  const fr = el.querySelector('.frames');
+  [...order, ...order].forEach((n, i) => {
+    const d = document.createElement('div');
+    d.className = 'photo';
+    d.style.width = (i % 3 === 2 ? 250 : 320) + 'px';
+    d.style.backgroundImage = `url(${IMG(n)})`;
+    d.innerHTML = `<span class="who">${GUESTS[(n - 1) % 12]}</span>`;
+    fr.appendChild(d);
+  });
+}
+buildStrip($('#stripA'), [1, 2, 3, 4, 5, 6, 7, 1, 2, 3], ['Diga Xis 400', '▸ 12A', '▸ 13A', '▸ 14A'], ['▸ 15', 'Casamento de Ana & Pedro', '▸ 16']);
+buildStrip($('#stripB'), [8, 9, 10, 11, 12, 13, 14, 8, 9, 10], ['▸ 17A', 'Diga Xis 400', '▸ 18A', '▸ 19A'], ['▸ 20', 'Casamento de Ana & Pedro', '▸ 21']);
+
+// QR
+const QR = __QR__;
+const qrCells = [];
+function isFinder(r, c, n) { return (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7); }
+(function () {
+  const n = QR.n, s = 508 / n;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (!QR.d[r * n + c]) continue;
+    const i = document.createElement('i');
+    i.style.cssText = `left:${c * s}px;top:${r * s}px;width:${s + 0.6}px;height:${s + 0.6}px`;
+    $('#qr').appendChild(i);
+    const dist = Math.hypot(r - n / 2, c - n / 2) / (n / 1.4);
+    qrCells.push({ el: i, d: isFinder(r, c, n) ? 0 : 0.15 + dist * 0.55 + rnd() * 0.25 });
+  }
+  const s2 = 304 / n;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (!QR.d[r * n + c]) continue;
+    const i = document.createElement('i');
+    i.style.cssText = `left:${c * s2}px;top:${r * s2}px;width:${s2 + 0.5}px;height:${s2 + 0.5}px`;
+    $('#tableqr').appendChild(i);
+  }
+})();
+
+// mode thumbs
+const liveEls = [5, 8, 3, 6].map((n, i) => { const d = document.createElement('div'); d.className = 'photo'; d.style.left = i * 212 + 'px'; d.style.backgroundImage = `url(${IMG(n)})`; $('#liveThumbs').appendChild(d); return d; });
+const vaultEls = [2, 9, 4, 11].map((n, i) => { const d = document.createElement('div'); d.className = 'photo'; d.style.left = i * 212 + 'px'; d.style.backgroundImage = `url(${IMG(n)})`; $('#vaultThumbs').appendChild(d); return d; });
+
+// album grid (3 cols, first item 2x2)
+const ALBUM = [[10, 'vó célia'], [1, 'bia.m'], [2, 'joão.f'], [3, 'duda'], [4, 'rafa.c'], [11, 'gabi'], [12, 'pedro.h'], [13, 'nina'], [14, 'caio']];
+const G = 14, C = (900 - 2 * G) / 3;
+const slots = [[0, 0, 2, 2], [2, 0, 1, 1], [2, 1, 1, 1], [0, 2, 1, 1], [1, 2, 1, 1], [2, 2, 1, 1], [0, 3, 1, 1], [1, 3, 1, 1], [2, 3, 1, 1]];
+const albumEls = ALBUM.map(([n, who], i) => {
+  const [x, y, w, h] = slots[i];
+  const d = document.createElement('div'); d.className = 'photo';
+  d.style.cssText += `left:${x * (C + G)}px;top:${y * (C + G)}px;width:${w * C + (w - 1) * G}px;height:${h * C + (h - 1) * G}px;background-image:url(${IMG(n)})`;
+  d.innerHTML = `<span class="who">${who}</span>`;
+  $('#grid').appendChild(d); return d;
+});
+
+// grain
+const gctx = $('#grain').getContext('2d');
+const grainTiles = [];
+for (let k = 0; k < 6; k++) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d'), im = x.createImageData(256, 256);
+  for (let i = 0; i < im.data.length; i += 4) { const v = rnd() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+  x.putImageData(im, 0, 0); grainTiles.push(gctx.createPattern(c, 'repeat'));
+}
+
+// ---- timeline ----
+const DURATION = 28.5;
+const FRAMES = [[0, '▸ 12A'], [3.8, '▸ 13A'], [7.8, '▸ 14A'], [11.4, '▸ 15A'], [15.1, '▸ 16A'], [18.8, '▸ 17A'], [22.5, '▸ 18A'], [25.6, '▸ 19A']];
+
+function render(t) {
+  // flash
+  let fl = 1 - eo(p(t, 0, 0.6));
+  fl = Math.max(fl, 0.9 * (1 - eo(p(t, 17.05, 17.45))) * (t >= 17.05 ? 1 : 0));
+  $('#flash').style.opacity = fl;
+
+  // S1
+  if (show($('#s1'), t, 0, 4.0, 0.01, 0.5)) {
+    fade($('#s1label'), t, 0.35, 0.7);
+    animWords(s1words, t, 0.7, 0.1, 0.8);
+    fade($('#s1lead'), t, 1.9, 0.8);
+    const out = eio(p(t, 3.5, 4.0));
+    $('#s1').firstElementChild.style.transform = `translateY(${-out * 120}px)`;
+  }
+
+  // S2 film
+  if (show($('#s2'), t, 3.8, 8.0, 0.4, 0.45)) {
+    const k = t - 3.8;
+    const inA = eo5(p(t, 3.8, 4.8)), inB = eo5(p(t, 4.0, 5.0));
+    $('#stripA').style.transform = `rotate(-7deg) translateX(${-k * 110 + (1 - inA) * 1400}px)`;
+    $('#stripB').style.transform = `rotate(-7deg) translateX(${-900 + k * 110 - (1 - inB) * 1400}px)`;
+    fade($('#s2top'), t, 4.2, 0.6);
+    animWords(s2words, t, 5.2, 0.1, 0.8);
+  }
+
+  // step heads
+  const heads = [[7.8, 11.5], [11.4, 15.2], [15.1, 18.9], [18.8, 22.6]];
+  heads.forEach(([a, b], i) => {
+    const el = $(`#h${i + 1}`);
+    if (show(el, t, a, b, 0.3, 0.35)) {
+      const num = el.querySelector('.num');
+      const e = eo5(p(t, a, a + 0.8));
+      num.style.transform = `translateY(${(1 - e) * 160}px)`; num.style.opacity = e;
+      animWords(headWords[i], t, a + 0.2, 0.08, 0.7);
+      const lead = el.querySelector('.lead'); if (lead) fade(lead, t, a + 0.6, 0.6);
+      el.firstElementChild.style.transform = `translateY(${-eio(p(t, b - 0.35, b)) * 60}px)`;
+    }
+  });
+
+  // S3 QR assemble
+  if (show($('#s3qr'), t, 7.9, 11.5, 0.3, 0.35)) {
+    const card = $('#qrcard');
+    const e = eback(p(t, 8.0, 8.7));
+    card.style.transform = `translateY(${(1 - eo(p(t, 8.0, 8.7))) * 300}px) scale(${0.85 + 0.15 * e}) rotate(${(1 - e) * -6}deg)`;
+    qrCells.forEach(({ el, d }) => {
+      const s = eback(p(t, 8.5 + d, 8.5 + d + 0.35));
+      el.style.transform = `scale(${s})`;
+    });
+    fade($('#qrcap'), t, 9.9, 0.5, 16);
+    // exit: card shrinks toward phone position
+    const out = eio(p(t, 11.0, 11.5));
+    card.style.opacity = 1 - out;
+  }
+
+  // phone (S4 + S5)
+  if (show($('#sphone'), t, 11.4, 18.9, 0.3, 0.4)) {
+    const ph = $('#phone');
+    const e = eo5(p(t, 11.4, 12.3));
+    ph.style.transform = `translateY(${(1 - e) * 1100}px) rotate(${(1 - e) * 8}deg)`;
+    // scan screen 11.4 - 13.6
+    const scan = $('#scrScan'), wel = $('#scrWelcome'), cam = $('#scrCam');
+    scan.style.display = t < 13.9 ? 'block' : 'none';
+    const sp = p(t, 12.1, 13.0);
+    $('#scanline').style.top = 230 + (Math.sin(sp * Math.PI * 2 - Math.PI / 2) * 0.5 + 0.5) * 380 + 'px';
+    $('#scanline').style.opacity = sp > 0 && sp < 1 ? 1 : 0;
+    const lock = eback(p(t, 12.9, 13.25));
+    $('#brackets').style.transform = `scale(${1.25 - 0.25 * lock})`;
+    $('#brackets').style.opacity = eo(p(t, 12.0, 12.3));
+    const n = eback(p(t, 13.15, 13.5));
+    $('#notif').style.transform = `translateY(${(1 - n) * -200}px)`;
+    // welcome 13.6 - 15.4
+    const w = eo5(p(t, 13.6, 14.1));
+    wel.style.display = t >= 13.6 && t < 15.6 ? 'block' : 'none';
+    wel.style.transform = `translateX(${(1 - w) * 100}%)`;
+    const press = p(t, 14.9, 15.1);
+    $('#startBtn').style.transform = `scale(${1 - Math.sin(press * Math.PI) * 0.06})`;
+    // camera 15.3+
+    const c = eo5(p(t, 15.3, 15.8));
+    cam.style.display = t >= 15.3 ? 'block' : 'none';
+    cam.style.transform = `translateX(${(1 - c) * 100}%)`;
+    $('#camImg').style.transform = `scale(${1.25 - 0.15 * p(t, 15.3, 17.05)})`;
+    const sh = p(t, 16.85, 17.1);
+    $('#shutterIn').style.transform = `scale(${1 - Math.sin(sh * Math.PI) * 0.18})`;
+    $('#camFlash').style.opacity = t >= 17.05 ? 1 - eo(p(t, 17.05, 17.5)) : 0;
+    $('#shots').textContent = t >= 17.05 ? '9' : '10';
+    const ls = $('#lastShot');
+    if (t >= 17.1) { ls.style.backgroundImage = `url(${IMG(7)})`; const q = eback(p(t, 17.1, 17.5)); ls.style.transform = `scale(${q})`; }
+    else { ls.style.backgroundImage = 'none'; ls.style.transform = 'scale(1)'; }
+    if (t >= 17.05) $('#camImg').style.backgroundImage = `url(${IMG(t >= 17.9 ? 13 : 7)})`;
+    else $('#camImg').style.backgroundImage = `url(${IMG(7)})`;
+  }
+
+  // S6 modes
+  if (show($('#s6'), t, 18.9, 22.6, 0.3, 0.4)) {
+    const a = eo5(p(t, 19.0, 19.7)), b = eo5(p(t, 19.2, 19.9));
+    $('#cardLive').style.transform = `translateY(${(1 - a) * 260}px)`; $('#cardLive').style.opacity = a;
+    $('#cardVault').style.transform = `translateY(${(1 - b) * 260}px)`; $('#cardVault').style.opacity = b;
+    const pulse = (t * 1.6) % 1;
+    $('#liveDot').style.boxShadow = `0 0 0 ${pulse * 14}px rgba(255,77,61,${0.6 * (1 - pulse)})`;
+    liveEls.forEach((el, i) => { const s = eback(p(t, 19.8 + i * 0.35, 20.15 + i * 0.35)); el.style.transform = `scale(${s})`; el.style.opacity = s > 0 ? 1 : 0; });
+    const rev = eio(p(t, 21.2, 21.9));
+    vaultEls.forEach((el, i) => {
+      el.style.transform = `scale(${eback(p(t, 19.6 + i * 0.06, 20.0 + i * 0.06))})`;
+      el.style.filter = `blur(${(1 - rev) * 22}px) brightness(${0.3 + 0.7 * rev})`;
+    });
+    const switched = t >= 21.35;
+    $('#vaultTitle').textContent = switched ? 'Revelado! Tudo de uma vez.' : 'Revelação amanhã, 10h';
+    $('#vaultSub').textContent = switched ? 'A surpresa chega no dia seguinte.' : 'Ninguém vê nada agora.';
+  }
+
+  // S7 album
+  if (show($('#s7'), t, 22.5, 25.8, 0.3, 0.45)) {
+    fade($('#s7label'), t, 22.6, 0.5);
+    animWords(s7words, t, 22.75, 0.08, 0.7);
+    albumEls.forEach((el, i) => {
+      const s = eo5(p(t, 23.1 + i * 0.12, 23.8 + i * 0.12));
+      el.style.opacity = s;
+      el.style.transform = `translateY(${(1 - s) * 180}px) scale(${0.9 + 0.1 * s}) rotate(${(1 - s) * (i % 2 ? 4 : -4)}deg)`;
+    });
+    $('#grid').style.transform = `scale(${1 + p(t, 24, 25.8) * 0.03})`;
+  }
+
+  // S8 end
+  if (show($('#s8'), t, 25.6, DURATION + 1, 0.4, 0.01)) {
+    const l = eo5(p(t, 25.7, 26.6));
+    $('#logo').style.transform = `scale(${0.8 + 0.2 * l})`; $('#logo').style.opacity = l;
+    $('#logo').style.filter = `blur(${(1 - l) * 16}px)`;
+    fade($('#tag'), t, 26.3, 0.6, 20);
+    const c = eback(p(t, 26.7, 27.2));
+    $('#cta').style.transform = `scale(${c})`;
+    fade($('#free'), t, 27.0, 0.5, 20);
+    fade($('#url'), t, 27.3, 0.6, 20);
+  }
+
+  // HUD
+  let lbl = FRAMES[0][1]; for (const [ft, l] of FRAMES) if (t >= ft) lbl = l;
+  $('#frameNo').textContent = lbl;
+
+  // grain
+  const fi = Math.floor(t * 30);
+  gctx.fillStyle = grainTiles[fi % grainTiles.length];
+  gctx.save(); gctx.translate((fi * 37) % 256, (fi * 91) % 256); gctx.fillRect(-256, -256, 1208 + 512, 2048 + 512); gctx.restore();
+}
+window.render = render;
+window.ready = Promise.all([...Array.from({length:14},(_,i)=>IMG(i+1)),'file:///home/user/xis/public/bride.jpeg'].map(u=>{const im=new Image();im.src=u;return im.decode().catch(()=>{});}));
+window.DURATION = DURATION;
+render(0);
+</script>
+</body>
+</html>
